@@ -1,0 +1,1 @@
+This repo consists of source code for Attendance Bot for Telegram in python
