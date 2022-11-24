@@ -2,14 +2,31 @@ import telebot
 import ast
 import os
 import requests
+import mysql.connector
 import time
 import urllib
 from telebot import types
 from uuid import uuid4
 
 bot = telebot.TeleBot("BOT_API_HERE")
+stud_db = mysql.connector.connect(
+  host="",
+  user="",
+  password="",
+  database=""
+)
 
-stringList = {"1": "Nitesh", "2": "Yash", "3": "Kiran", "4": "Rohit"}
+sql_query = stud_db.cursor()
+
+sql_query.execute("SELECT rollId,name FROM studentData")
+
+result = sql_query.fetchall()
+
+stringList = {}
+
+for names in result :
+    stringList.update({str(names[0]):names[1]})
+
 rollcall = []
 submitstatus = False
 crossIcon = u"\u2705"
@@ -25,7 +42,6 @@ def get_fact():
     contents = requests.get('https://uselessfacts.jsph.pl/random.json?language=en').json()
     fact = contents['text']
     return fact
-
 
 def sociallinks():
     markup = types.InlineKeyboardMarkup()
@@ -73,16 +89,20 @@ def editKeyboard(rollno):
 
 @bot.message_handler(commands=['photo'])
 def handle_command_adminwindow(message):
+    print("Photo sent")
     url = get_url()
     bot.send_photo(message.chat.id, url)
 
 @bot.message_handler(commands=['fact'])
 def handle_command_adminwindow(message):
+    print("fact sent")
     fact = get_fact()
     bot.send_message(chat_id=message.chat.id, text=fact)
 
+
 @bot.message_handler(commands=['startatt'])
 def handle_command_adminwindow(message):
+
     bot.send_message(chat_id=message.chat.id,
                      text="Here are the Roll Calls of the Students",
                      reply_markup=makeKeyboard(),
@@ -91,6 +111,7 @@ def handle_command_adminwindow(message):
 
 @bot.message_handler(commands=['showatt'])
 def handle_command_adminwindow(message):
+    rollcall.sort()
     present = "Roll No's Present are : "
     for x in rollcall:
         if rollcall[len(rollcall)-1] == x:
@@ -148,6 +169,7 @@ def handle_query(call):
                               message_id=call.message.message_id,
                               reply_markup=editKeyboard(keyFromCallBack),
                               parse_mode='HTML')
+        rollcall.sort()
 
     if (call.data.startswith("['key'")) and submitstatus == True:
         bot.send_message(chat_id=call.message.chat.id,
@@ -157,6 +179,7 @@ def handle_query(call):
     if (call.data == 'submit'):
         if submitstatus == False:
             submitstatus = True
+            rollcall.sort()
             bot.edit_message_text(chat_id=call.message.chat.id,
                                   text="Here are the Roll Calls of the Students",
                                   message_id=call.message.message_id,
